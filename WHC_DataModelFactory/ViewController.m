@@ -34,12 +34,13 @@
 #import <objc/runtime.h>
 //+ (NSString *)prefix;
 #define kWHC_DEFAULT_CLASS_NAME @("WHC")
-#define kWHC_CLASS       @("\n@interface %@ :NSObject\n%@\n@end\n")
-#define kWHC_CodingCLASS       @("\n@interface %@ :NSObject <NSCoding>\n%@\n@end\n")
-#define kWHC_CopyingCLASS       @("\n@interface %@ :NSObject <NSCopying>\n%@\n@end\n")
-#define kWHC_CodingAndCopyingCLASS       @("\n@interface %@ :NSObject <NSCoding,NSCopying>\n%@\n@end\n")
+#define kWHC_PROTOCOL       @("\n@protocol %@ @end\n")
+#define kWHC_CLASS       @("\n@interface %@ :JSONModel\n%@\n@end\n")
+#define kWHC_CodingCLASS       @("\n@interface %@ :JSONModel <NSCoding>\n%@\n@end\n")
+#define kWHC_CopyingCLASS       @("\n@interface %@ :JSONModel <NSCopying>\n%@\n@end\n")
+#define kWHC_CodingAndCopyingCLASS       @("\n@interface %@ :JSONModel <NSCoding,NSCopying>\n%@\n@end\n")
 
-#define kWHC_PROPERTY(s)    ((s) == 'c' ? @("@property (nonatomic , copy) %@              * %@;\n") : @("@property (nonatomic , strong) %@              * %@;\n"))
+#define kWHC_PROPERTY(s)    ((s) == 'c' ? @("@property (nonatomic , copy) %@       * %@;\n") : @("@property (nonatomic , strong) %@        * %@;\n"))
 #define kWHC_ASSIGN_PROPERTY    @("@property (nonatomic , assign) %@              %@;\n")
 #define kWHC_CLASS_M     @("@implementation %@\n\n@end\n")
 #define kWHC_CodingCLASS_M     @("@implementation %@\n- (id)initWithCoder:(NSCoder *)decoder {\n       if (self = [super init]) { \n              [self whc_Decode:decoder]; \n       }\n       return self;\n ; \n} \n- (void)encodeWithCoder:(NSCoder *)encoder {\n       [self whc_Encode:encoder]; \n} \n\n\n@end\n\n")
@@ -53,12 +54,12 @@
 
 #define kSWHC_Prefix_Func @("class func prefix() -> String {\n    return \"%@\"\n}\n")
 
-#define kSWHC_CLASS @("\n@objc(%@)\nclass %@ :NSObject{\n%@\n}")
-#define kSWHC_CodingCLASS @("\n@objc(%@)\nclass %@ :NSObject, NSCoding {\n \n       required init?(coder aDecoder: NSCoder) {\n              super.init()\n              self.whc_Decode(aDecoder)\n       }\n\n       func encodeWithCoder(aCoder: NSCoder) {\n              self.whc_Encode(aCoder)\n}  \n\n%@\n       }\n")
+#define kSWHC_CLASS @("\n@objc(%@)\nclass %@ :JSONModel{\n%@\n}")
+#define kSWHC_CodingCLASS @("\n@objc(%@)\nclass %@ :JSONModel, NSCoding {\n \n       required init?(coder aDecoder: NSCoder) {\n              super.init()\n              self.whc_Decode(aDecoder)\n       }\n\n       func encodeWithCoder(aCoder: NSCoder) {\n              self.whc_Encode(aCoder)\n}  \n\n%@\n       }\n")
 
-#define kSWHC_CopyingCLASS @("\n@objc(%@)\nclass %@ :NSObject, NSCopying {\n \n       func copyWithZone(zone: NSZone) -> AnyObject {\n              return self.whc_Copy()\n       }  \n\n %@\n}\n")
+#define kSWHC_CopyingCLASS @("\n@objc(%@)\nclass %@ :JSONModel, NSCopying {\n \n       func copyWithZone(zone: NSZone) -> AnyObject {\n              return self.whc_Copy()\n       }  \n\n %@\n}\n")
 
-#define kSWHC_CodingAndCopyingCLASS @("\n@objc(%@)\nclass %@ :NSObject, NSCoding, NSCopying {\n\n       required init?(coder aDecoder: NSCoder) {\n              super.init()\n              self.whc_Decode(aDecoder)\n       }\n\n       func encodeWithCoder(aCoder: NSCoder) {\n              self.whc_Encode(aCoder)\n       } \n\n       func copyWithZone(zone: NSZone) -> AnyObject {\n              return self.whc_Copy()\n       } \n\n%@\n}\n")
+#define kSWHC_CodingAndCopyingCLASS @("\n@objc(%@)\nclass %@ :JSONModel, NSCoding, NSCopying {\n\n       required init?(coder aDecoder: NSCoder) {\n              super.init()\n              self.whc_Decode(aDecoder)\n       }\n\n       func encodeWithCoder(aCoder: NSCoder) {\n              self.whc_Encode(aCoder)\n       } \n\n       func copyWithZone(zone: NSZone) -> AnyObject {\n              return self.whc_Copy()\n       } \n\n%@\n}\n")
 
 #define kSWHC_PROPERTY @("       var %@: %@!\n")
 #define kSWHC_ASSGIN_PROPERTY @("       var %@: %@\n")
@@ -283,7 +284,7 @@
                 if([subObject isKindOfClass:[NSDictionary class]]){
                     NSString * classContent = [self handleDataEngine:subObject key:keyArr[i]];
                     if(_checkBox.state == 0){
-                        [property appendFormat:kWHC_PROPERTY('s'),className,propertyName];
+                        [property appendFormat:kWHC_PROPERTY('s'),[NSString stringWithFormat:@"%@<Optional>",className],propertyName];
                         if (_codingCheckBox.state != 0 && _copyingCheckBox.state != 0) {
                             [_classString appendFormat:kWHC_CodingAndCopyingCLASS,className,classContent];
                         }else if (_codingCheckBox.state != 0) {
@@ -355,7 +356,9 @@
                     ARRAY_PASER:
                         classContent = [self handleDataEngine:subObject key:keyArr[i]];
                         if(_checkBox.state == 0){
-                            [property appendFormat:kWHC_PROPERTY('s'),[NSString stringWithFormat:@"NSArray<%@ *>",className],propertyName];
+                            [property appendFormat:kWHC_PROPERTY('s'),[NSString stringWithFormat:@"NSArray<%@ ,Optional>",className],propertyName];
+                            
+                            [_classString appendFormat:kWHC_PROTOCOL,className];
                             [_classString appendFormat:kWHC_CLASS,className,classContent];
                             if (_classPrefixName.length > 0) {
                                 [_classMString appendFormat:kWHC_CLASS_Prefix_M,className,_classPrefixName];
@@ -369,21 +372,31 @@
                     }
                 }else if ([subObject isKindOfClass:[NSString class]]){
                     if(_checkBox.state == 0){
-                        [property appendFormat:kWHC_PROPERTY('c'),@"NSString",propertyName];
+                        [property appendFormat:kWHC_PROPERTY('c'),@"NSString <Optional>",propertyName];
                     }else{
                         [property appendFormat:kSWHC_PROPERTY,propertyName,@"String"];
                     }
                 }else if ([subObject isKindOfClass:[NSNumber class]]){
                     if(_checkBox.state == 0){
+                        //                        if (strcmp([subObject objCType], @encode(float)) == 0 ||
+                        //                            strcmp([subObject objCType], @encode(CGFloat)) == 0) {
+                        //                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"CGFloat",propertyName];
+                        //                        }else if (strcmp([subObject objCType], @encode(double)) == 0) {
+                        //                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"double",propertyName];
+                        //                        }else if (strcmp([subObject objCType], @encode(BOOL)) == 0) {
+                        //                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"BOOL",propertyName];
+                        //                        }else {
+                        //                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"NSInteger",propertyName];
+                        //                        }
                         if (strcmp([subObject objCType], @encode(float)) == 0 ||
                             strcmp([subObject objCType], @encode(CGFloat)) == 0) {
-                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"CGFloat",propertyName];
+                            [property appendFormat:kWHC_PROPERTY('n'),@"NSNumber <Optional>",propertyName];
                         }else if (strcmp([subObject objCType], @encode(double)) == 0) {
-                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"double",propertyName];
+                            [property appendFormat:kWHC_PROPERTY('n'),@"NSNumber <Optional>",propertyName];
                         }else if (strcmp([subObject objCType], @encode(BOOL)) == 0) {
-                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"BOOL",propertyName];
+                            [property appendFormat:kWHC_PROPERTY('n'),@"NSNumber <Optional>",propertyName];
                         }else {
-                            [property appendFormat:kWHC_ASSIGN_PROPERTY,@"NSInteger",propertyName];
+                            [property appendFormat:kWHC_PROPERTY('n'),@"NSNumber <Optional>",propertyName];
                         }
                     }else{
                         if (strcmp([subObject objCType], @encode(float)) == 0 ||
@@ -400,13 +413,13 @@
                 }else{
                     if(subObject == nil){
                         if(_checkBox.state == 0){
-                            [property appendFormat:kWHC_PROPERTY('c'),@"NSString",propertyName];
+                            [property appendFormat:kWHC_PROPERTY('c'),@"NSString <Optional>",propertyName];
                         }else{
                             [property appendFormat:kSWHC_PROPERTY,propertyName,@"String"];
                         }
                     }else if([subObject isKindOfClass:[NSNull class]]){
                         if(_checkBox.state == 0){
-                            [property appendFormat:kWHC_PROPERTY('c'),@"NSString",propertyName];
+                            [property appendFormat:kWHC_PROPERTY('c'),@"NSString <Optional>",propertyName];
                         }else{
                             [property appendFormat:kSWHC_PROPERTY,propertyName,@"String"];
                         }
