@@ -225,11 +225,28 @@
 
 - (NSString *)handleAfterClassName:(NSString *)className {
     if (className != nil && className.length > 0) {
-        NSString * first = [className substringToIndex:1];
-        NSString * other = [className substringFromIndex:1];
-        return [NSString stringWithFormat:@"%@%@%@",_classPrefixName,[first uppercaseString],other];
+        className=[self formatClassName:className];
+        return [NSString stringWithFormat:@"%@%@",_classPrefixName,className];
     }
     return className;
+}
+- (NSString *)formatClassName:(NSString *)className
+{
+    NSArray *array=[className componentsSeparatedByString:@"_"];
+    NSString *resultStr=@"";
+    if (array.count>1) {
+        for (NSString *str in array) {
+            NSString * first = [str substringToIndex:1];
+            NSString * other = [str substringFromIndex:1];
+            resultStr=[resultStr stringByAppendingString:[NSString stringWithFormat:@"%@%@",[first uppercaseString],other]];
+        }
+    }else
+    {
+        NSString * first = [className substringToIndex:1];
+        NSString * other = [className substringFromIndex:1];
+        resultStr=[resultStr stringByAppendingString:[NSString stringWithFormat:@"%@%@",[first uppercaseString],other]];
+    }
+    return resultStr;
 }
 
 - (NSString *)handlePropertyName:(NSString *)propertyName {
